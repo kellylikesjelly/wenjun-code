@@ -1,0 +1,21 @@
+# three params to set: use_plr, no_exploratory_grad_updates, ued_editor
+Method	   ued_algo	        use_plr   no_exploratory_grad_updates   ued_editor
+DR	     domain_randomization   false	   false					   false
+PLR	     domain_randomization   true	   false					   false
+PLR⊥	     domain_randomization   true	   true					   false
+ACCEL	domain_randomization   true	   true					   true
+PAIRED	paired	             false	   false					   false
+REPAIRED	paired			   true	   true					   false
+Minimax	minimax			   false	   false					   false
+
+
+
+# Bipedal-Walker, divergence traj, cost=Euclidean, DivDef=min, level_replay_prob=0.5 
+CUDA_VISIBLE_DEVICES=1 python3 -m train --xpid=ued-BipedalWalker-Adversarial-v0-domain_randomization-noexpgrad-lr0.0003-epoch5-mb32-v0.5-gc0.5-henv0.01-ha0.001-plr0.5-rho0.5-n1000-st0.5-positive_value_loss-rank-t0.1-tl_0 --env_name=BipedalWalker-Adversarial-v0 --use_gae=True --gamma=0.99 --gae_lambda=0.9 --seed=88 --num_control_points=12 --recurrent_arch=lstm --recurrent_agent=False --recurrent_adversary_env=False --recurrent_hidden_size=1 --use_global_critic=False --lr=0.0003 --num_steps=2048 --num_processes=16 --num_env_steps=1000000000 --ppo_epoch=5 --num_mini_batch=32 --entropy_coef=0.001 --value_loss_coef=0.5 --clip_param=0.2 --clip_value_loss=False --adv_entropy_coef=0.01 --max_grad_norm=0.5 --algo=ppo --ued_algo=domain_randomization --use_plr=True --no_exploratory_grad_updates=True --use_editor=False --level_replay_prob=0.5 --level_replay_rho=0.5 --level_replay_seed_buffer_size=16 --level_replay_score_transform=rank --level_replay_temperature=0.1 --staleness_coef=0.5 --level_editor_prob=0 --level_editor_method=random --num_edits=0 --base_levels=batch --log_interval=10 --screenshot_interval=200 --log_grad_norm=True --normalize_returns=True --checkpoint_basis=student_grad_updates --archive_interval=5000 --reward_shaping=True --use_categorical_adv=True --use_skip=False --choose_start_pos=False --sparse_rewards=False --handle_timelimits=True --level_replay_strategy=positive_value_loss --test_env_names=BipedalWalker-v3,BipedalWalkerHardcore-v3,BipedalWalker-Med-Stairs-v0,BipedalWalker-Med-PitGap-v0,BipedalWalker-Med-StumpHeight-v0,BipedalWalker-Med-Roughness-v0 --log_dir=./logs/data_Divergence_Traj_Euc_Min_seed88/ --test_interval=100 --test_num_episodes=10 --test_num_processes=2 --log_plr_buffer_stats=True --log_replay_complexity=True --checkpoint=True --log_action_complexity=False
+
+
+# Bipedal-Walker, divergence traj, cost=Euclidean, DivDef=min, level_replay_prob=0.8 
+CUDA_VISIBLE_DEVICES=1 python3 -m train --xpid=ued-BipedalWalker-Adversarial-v0-domain_randomization-noexpgrad-lr0.0003-epoch5-mb32-v0.5-gc0.5-henv0.01-ha0.001-plr0.5-rho0.5-n1000-st0.5-positive_value_loss-rank-t0.1-tl_0 --env_name=BipedalWalker-Adversarial-v0 --use_gae=True --gamma=0.99 --gae_lambda=0.9 --seed=88 --num_control_points=12 --recurrent_arch=lstm --recurrent_agent=False --recurrent_adversary_env=False --recurrent_hidden_size=1 --use_global_critic=False --lr=0.0003 --num_steps=2048 --num_processes=16 --num_env_steps=1000000000 --ppo_epoch=5 --num_mini_batch=32 --entropy_coef=0.001 --value_loss_coef=0.5 --clip_param=0.2 --clip_value_loss=False --adv_entropy_coef=0.01 --max_grad_norm=0.5 --algo=ppo --ued_algo=domain_randomization --use_plr=True --no_exploratory_grad_updates=True --use_editor=False --level_replay_prob=0.8 --level_replay_rho=0.5 --level_replay_seed_buffer_size=16 --level_replay_score_transform=rank --level_replay_temperature=0.1 --staleness_coef=0.5 --level_editor_prob=0 --level_editor_method=random --num_edits=0 --base_levels=batch --log_interval=10 --screenshot_interval=200 --log_grad_norm=True --normalize_returns=True --checkpoint_basis=student_grad_updates --archive_interval=5000 --reward_shaping=True --use_categorical_adv=True --use_skip=False --choose_start_pos=False --sparse_rewards=False --handle_timelimits=True --level_replay_strategy=positive_value_loss --test_env_names=BipedalWalker-v3,BipedalWalkerHardcore-v3,BipedalWalker-Med-Stairs-v0,BipedalWalker-Med-PitGap-v0,BipedalWalker-Med-StumpHeight-v0,BipedalWalker-Med-Roughness-v0 --log_dir=./logs/test/ --test_interval=100 --test_num_episodes=10 --test_num_processes=2 --log_plr_buffer_stats=True --log_replay_complexity=True --checkpoint=True --log_action_complexity=False
+
+
+
