@@ -28,6 +28,9 @@ class LevelStore(object):
 
 		self.data_info = data_info
 
+		#KELLY
+		# self.edited_seeds = set()
+
 	def __len__(self):
 		return len(self.levels)
 
@@ -46,6 +49,7 @@ class LevelStore(object):
 			self.seed2level[seed] = level
 			if parent_seed is not None:
 				self.seed2parent[seed] = self.seed2parent[parent_seed] + [self.seed2level[parent_seed]]
+				# self.edited_seeds.add(seed)
 			else:
 				self.seed2parent[seed] = []
 			self.level2seed[level] = seed
@@ -74,6 +78,9 @@ class LevelStore(object):
 
 		level = self.seed2level[level_seed]
 		self.levels.remove(level)
+		#KELLY
+		# self.edited_seeds.remove(level_seed)
+
 		del self.seed2level[level_seed]
 		del self.level2seed[level]
 		del self.seed2parent[level_seed]
@@ -89,12 +96,24 @@ class LevelStore(object):
 		old_seeds = set(self.seed2level)
 		new_seeds = set(level_seeds)
 
+		print('old_seeds', old_seeds)
+		print('new_seeds', new_seeds)
+
 		# Don't update if empty seeds
 		if len(new_seeds) == 1 and -1 in new_seeds:
 			return
 
 		ejected_seeds = old_seeds - new_seeds
+		# self.num_removed_seeds = len(ejected_seeds)
+		# self.num_edited_seeds_removed = 0
+		self.ejected_seeds = ejected_seeds
+		self.edited_seeds_removed = set()
 		for seed in ejected_seeds:
+			#check if edited or not for logging
+			if len(self.seed2parent[seed])!=0:
+				#edited
+				# self.num_edited_seeds_removed += 1
+				self.edited_seeds_removed.add(seed)
 			self._remove(seed)
 
 	def get_level(self, level_seed):

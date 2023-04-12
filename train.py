@@ -71,9 +71,14 @@ year, month, day = date.tm_year, date.tm_mon, date.tm_mday
 # 2023, Jan
 # ALGO = 'Solely_DivTraj_Euc_Min_seed92'
 # DATE = '2022-Dec-22'
-ALGO = 'accel_div_v0_seed92'
-DATE = '2022-Dec-22'
+# ALGO = 'accel_div_v0_seed92'
+# DATE = '2022-Dec-22'
 
+# kelly
+# ALGO = 'accel_div_v0_seed88'
+# DATE = '2023-Apr-4'
+ALGO = 'accel_div_v0_seed88'
+DATE = '2023-Apr-13'
 
 if __name__ == '__main__':
     os.environ["OMP_NUM_THREADS"] = "1"
@@ -275,6 +280,26 @@ if __name__ == '__main__':
             writer.add_scalar('divergence_sum', stats["divergence_sum"], j)
             # writer.add_scalar('diversity_sum', stats["diversity_sum"], j)
             writer.add_scalar('regret_sum', stats["regret_sum"], j)
+
+            #KELLY
+            if "num_edited_into_buffer" in stats.keys():
+                writer.add_scalar('num_edited_into_buffer', stats["num_edited_into_buffer"], j)
+            else:
+                writer.add_scalar('num_new_into_buffer', stats["num_new_into_buffer"], j)
+
+            if "divergence_sum_edited_seeds" in stats.keys():
+                writer.add_scalar('divergence_sum_edited_seeds', stats["divergence_sum_edited_seeds"], j)
+            else:
+                writer.add_scalar('divergence_sum_new_seeds', stats["divergence_sum_new_seeds"], j)
+
+            if "removed_seed_edited_mean_regret" in stats.keys():
+                writer.add_scalar('removed_seed_edited_mean_regret', stats["removed_seed_edited_mean_regret"], j)
+            if "removed_seed_new_mean_regret" in stats.keys():
+                writer.add_scalar('removed_seed_new_mean_regret', stats["removed_seed_new_mean_regret"], j)
+            
+            writer.add_scalar('num_edited_seeds_removed', stats["num_edited_seeds_removed"], j)
+            writer.add_scalar('num_new_seeds_removed', stats["num_new_seeds_removed"], j)
+
 
             # agent testing returns
             for test_env_name in args.test_env_names.split(','):
