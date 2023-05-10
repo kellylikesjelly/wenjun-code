@@ -281,18 +281,9 @@ class LevelSampler():
 
         if done:
             # Move seed into working seed data structures
-            seed_idx = self._next_buffer_index
-            # seed_idx, seed_score = self._next_buffer_index                  # retrieve the seed_idx with min support
+            seed_idx = self._next_buffer_index                  # retrieve the seed_idx with min support
 
             if self.seed_scores[seed_idx] <= merged_score or self.unseen_seed_weights[seed_idx] > 0:
-                #RECORD REMOVED SEED - seed, score
-                if self.unseen_seed_weights[seed_idx] <= 0:
-                    #if not unseen at next position, seed was replaced
-                    # self.removed_seed.append((self.seeds[seed_idx], seed_score))
-                    #looking at regret instead of combined score
-                    self.removed_seed[self.seeds[seed_idx]] = self.seed_scores[seed_idx]
-
-
                 self.unseen_seed_weights[seed_idx] = 0. # Unmask this index
                 self.working_seed_set.discard(self.seeds[seed_idx])
                 self.working_seed_set.add(seed)
@@ -332,13 +323,10 @@ class LevelSampler():
         # wenjun: self.seed_buffer_priority = 'replay_support'
         if self._proportion_filled < 1.0:
             return self.working_seed_buffer_size
-            # return (self.working_seed_buffer_size, None)
         else:
             if self.seed_buffer_priority == 'replay_support':
                 if self.combine_div_regret:
-                    combined_scores = self.sample_weights_w_diversity()
-                    return combined_scores.argmin()
-                    # return (combined_scores.argmin(), combined_scores.min())          # wenjun:   support = {score, stale, diversity}
+                    return self.sample_weights_w_diversity().argmin()          # wenjun:   support = {score, stale, diversity}
                 elif self.use_solely_div:
                     # print('pick levels into level buffer solely according to divergence!')
                     return self.sample_weights_solely_diversity().argmin()     # wenjun:   support = {diversity}
@@ -555,9 +543,6 @@ class LevelSampler():
         return not self.sample_full_distribution or (self.sample_full_distribution and self.seed_buffer_size > 0)
 
     def _update_with_rollouts(self, rollouts, score_function):
-        # KELLY initialise removed seeds record list
-        self.removed_seed = {}
-
         if not self._has_working_seed_buffer:
             return
 
@@ -664,8 +649,6 @@ class LevelSampler():
     def after_update(self):
         # log the sum of regrets in the buffer
         self.regret_sum = np.sum(self.seed_scores)
-        # KELLY: log sum of diversity in buffer
-        # self.diversity_mean = np.mean(self.seed_diversity * (1-self.unseen_seed_weights))
 
         if not self._has_working_seed_buffer:
             return

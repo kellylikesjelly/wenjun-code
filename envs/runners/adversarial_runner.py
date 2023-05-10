@@ -233,10 +233,8 @@ class AdversarialRunner(object):
             self.OBS_NORMALIZE = torch.Tensor([3.14, 5, 5, 5, 3.14, 5, 3.14, 5, 5, 3.14, 5, 3.14, 5, 5,
                                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,]) 
 
-        # self.Buffer_Trajs = torch.zeros((args.num_steps + 1, args.num_processes, obs_dim), device='cuda')
-        self.Buffer_Trajs = torch.zeros((args.num_steps + 1, args.num_processes, obs_dim), device='cpu')
-        # self.New_Trajs = torch.zeros((args.num_steps + 1, args.num_processes, obs_dim), device='cuda')
-        self.New_Trajs = torch.zeros((args.num_steps + 1, args.num_processes, obs_dim), device='cpu')
+        self.Buffer_Trajs = torch.zeros((args.num_steps + 1, args.num_processes, obs_dim), device='cuda')
+        self.New_Trajs = torch.zeros((args.num_steps + 1, args.num_processes, obs_dim), device='cuda')
         self.level_divgence = torch.ones(args.num_processes, 1)
         
         self.divergence_sum = 0
@@ -748,12 +746,10 @@ class AdversarialRunner(object):
             # wenjun: store (s,a)~new_traj and (s,a)~buffer_traj
             if not is_env and level_replay:
                 obs_normed = obs / self.OBS_NORMALIZE
-                # self.Buffer_Trajs[step] = torch.clone(obs_normed).cuda()
-                self.Buffer_Trajs[step] = obs_normed
+                self.Buffer_Trajs[step] = torch.clone(obs_normed).cuda()
             if not is_env and not level_replay:
                 obs_normed = obs / self.OBS_NORMALIZE
-                # self.New_Trajs[step] = torch.clone(obs_normed).cuda()
-                self.New_Trajs[step] = obs_normed
+                self.New_Trajs[step] = torch.clone(obs_normed).cuda()
         
         # when student rollout on new levels is done, compute divergent for {new_trajs, buffer_trajs}
         if not is_env and level_replay:
@@ -926,9 +922,6 @@ class AdversarialRunner(object):
         if self.is_training and not student_discard_grad:
             self.student_grad_updates += 1
 
-        print('level_replay', level_replay)
-        print('buffer seeds', self._get_level_sampler('agent')[0].seeds)
-
         # Generate a batch of adversarial environments
         env_info = self.agent_rollout(
             agent=adversary_env, 
@@ -950,9 +943,6 @@ class AdversarialRunner(object):
             level_sampler=level_sampler,
             update_level_sampler=is_updateable,
             discard_grad=student_discard_grad)
-        
-        print('first rollout')
-        print('buffer seeds',self._get_level_sampler('agent')[0].seeds)
 
         # Use a separate PLR curriculum for the antagonist
         if level_replay and self.is_paired and (args.protagonist_plr == args.antagonist_plr):
@@ -1031,9 +1021,6 @@ class AdversarialRunner(object):
                 level_sampler=level_sampler,
                 update_level_sampler=is_updateable,
                 discard_grad=True)
-            
-            print('edited rollout')
-            print('buffer seeds',self._get_level_sampler('agent')[0].seeds)
         # ==== ACCEL end ====
 
         if args.use_plr:
@@ -1111,143 +1098,6 @@ class AdversarialRunner(object):
         })
         '''
 
-        #KELLY
-        print('replay', level_replay)
-        #what is the rate of entering buffer for edited and new seeds?
-        candidate_seeds = self.current_level_seeds
-        print('candidate_seeds', candidate_seeds)
-
-        working_buffer_seeds = self.level_samplers["agent"].working_seed_set
-        print('working_buffer_seeds', working_buffer_seeds)
-
-        count_candidate_into_buffer = sum(el in candidate_seeds for el in working_buffer_seeds)
-        print(count_candidate_into_buffer)
-
-        if level_replay:
-            stats.update({'num_edited_into_buffer': count_candidate_into_buffer})
-            print('replay, num_edited')
-        else:
-            stats.update({'num_new_into_buffer': count_candidate_into_buffer})
-            print('not replay, num_new')
-            
-        #average divergence of edited seeds -> but not just upon addition
-        #also cuz diversity of new seeds not used for entry into buffer so its a bit useless
-        #track in the buffer also cuz they might drop out
-        # avg_divg_edited = self.divergence_sum/len(edited_seeds)
-        # stats.update({'diversity_mean_edited': avg_divg_edited})
-        
-        #divergence scores for new seeds vs edited seeds upon entry to buffer
-        print(self.level_divgence)
-        level_divgence_sum = torch.clone(torch.sum(self.level_divgence))
-        if level_replay:
-            #last div buffer is filled with edited seeds
-            stats.update({'divergence_sum_edited_seeds': level_divgence_sum})
-            print('replay, edited div')
-        else:
-            stats.update({'divergence_sum_new_seeds': level_divgence_sum})
-            print('not replay, new div')
-        print('level_divgence_sum', level_divgence_sum)
-
-        #what is regret of removed seeds, edited vs new
-        removed_seed_edited_scores = []
-        removed_seed_new_scores = []
-        edited_seeds_removed = self.level_store.edited_seeds_removed
-        print('edited_seeds_removed', edited_seeds_removed)
-
-        edited_seeds_buffer_removed = set(edited_seeds_removed)-set(candidate_seeds)
-        print('edited_seeds_buffer_removed', edited_seeds_buffer_removed)
-
-        new_seeds_buffer_removed = self.level_store.ejected_seeds - set(edited_seeds_removed)-set(candidate_seeds)
-        print('new_seeds_buffer_removed', new_seeds_buffer_removed)
-
-        removed_seed_score_dict = level_sampler.removed_seed
-        print('removed_seed_score_dict', removed_seed_score_dict)
-
-        for removed_seed in edited_seeds_buffer_removed:
-            removed_seed_edited_scores.append(removed_seed_score_dict[removed_seed])
-
-        for removed_seed in new_seeds_buffer_removed:
-            removed_seed_new_scores.append(removed_seed_score_dict[removed_seed])
-
-        print('removed_seed_edited_scores',removed_seed_edited_scores)
-        print('removed_seed_new_scores', removed_seed_new_scores)
-
-        if len(edited_seeds_buffer_removed)!=0:
-            removed_seed_edited_score = sum(removed_seed_edited_scores)/len(removed_seed_edited_scores)
-            stats.update({'removed_seed_edited_mean_regret':removed_seed_edited_score})
-
-            print('removed_seed_edited_mean_regret', removed_seed_edited_score)
-        if len(new_seeds_buffer_removed)!=0:
-            removed_seed_new_score = sum(removed_seed_new_scores)/len(removed_seed_new_scores)
-            stats.update({'removed_seed_new_mean_regret':removed_seed_new_score})
-
-            print('removed_seed_new_mean_regret', removed_seed_new_score)
-
-        #number of dropped seeds (edited vs new)
-        stats.update({'num_edited_seeds_removed':len(edited_seeds_buffer_removed),
-                      'num_new_seeds_removed':len(new_seeds_buffer_removed)})
-        print('edited_seeds_buffer_removed', len(edited_seeds_buffer_removed))
-        print('num_new_seeds_removed', len(new_seeds_buffer_removed))
-
-        # seeds_ejected_from_buffer = self.level_store.ejected_seeds - set(candidate_seeds)
-        # if len(seeds_ejected_from_buffer)!=0:
-        #     stats.update({'prop_edited_seeds_removed':len(edited_seeds_buffer_removed)/len(seeds_ejected_from_buffer)})
-        
-
-        # print('edited_seeds_removed', edited_seeds_removed)
-        # print('level sampler removed', level_sampler.removed_seed)
-        # for removed_seed in level_sampler.removed_seed:
-        #     #seed itself -> check if edited
-        #     if removed_seed[0] in edited_seeds_removed:
-        #         #if edited seed
-        #         print('edited seed removed', removed_seed[0], removed_seed[1])
-        #         removed_seed_edited_scores.append(removed_seed[1])
-        #     else:
-        #         print('new seed removed', removed_seed[0], removed_seed[1])
-        #         new_seed_edited_scores.append(removed_seed[1])
-
-
-        #track droppage of edited seeds at point in time in level store (at removal from level store - _reconcile_level_store_and_samplers)
-        # stats.update({'num_edited_seeds_removed':len(removed_seed_edited_scores)})
-        # if self.level_store.num_removed_seeds!=0:
-        #     stats.update({'prop_edited_seeds_removed':len(removed_seed_edited_scores)/(len(removed_seed_edited_scores)+len(new_seed_edited_scores))})
-        # else:
-        #     #give default of 0- not dropped
-        #     stats.update({'prop_edited_seeds_removed':0})
-
-        
-        
-        # KELLY: log scores for edited and new seeds (combined)
-        # removed_seed_edited_scores = []
-        # new_seed_edited_scores = []
-        # edited_seeds_removed = self.level_store.edited_seeds_removed
-        # for removed_seed in level_sampler.removed_seed:
-        #     #seed itself -> check if edited
-        #     if removed_seed[0] in edited_seeds_removed:
-        #         #if edited seed
-        #         removed_seed_edited_scores.append(removed_seed[1])
-        #     else:
-        #         new_seed_edited_scores.append(removed_seed[1])
-        # if len(removed_seed_edited_scores)!=0:
-        #     removed_seed_edited_score = sum(removed_seed_edited_scores)/len(removed_seed_edited_scores)
-        #     stats.update({'removed_seed_edited_mean_score':removed_seed_edited_score})
-        # if len(new_seed_edited_scores)!=0:
-        #     new_seed_edited_score = sum(new_seed_edited_scores)/len(new_seed_edited_scores)
-        #     stats.update({'new_seed_edited_mean_score':new_seed_edited_score})
-        
-        # # KELLY: log scores for seeds (regret) -> sum regret is alr done
-        # level_sampler.seed_scores
-        # # KELLY: log scores for seeds (diversity)
-        # level_sampler.seed_diversity
-        # level_sampler.seeds
-        # idx_edited = np.isin(level_sampler.seeds, self.level_store.edited_seeds)
-        # edited_diversity = np.mean(level_sampler.seed_diversity[idx_edited])
-        # np.mean(level_sampler.seed_diversity[(~idx_edited) & (level_sampler.unseen_seed_weights<=0)])
-        # #replay -> div sum (new) edited levels diversity which may not make it into buffer
-        # #not replay -> ()
-
-        #update average score of edited seeds and new seeds
-        
         stats.update({
             'steps': (self.num_updates + self.total_num_edits) * args.num_processes * args.num_steps,
             'total_episodes': self.total_episodes_collected,
@@ -1258,8 +1108,6 @@ class AdversarialRunner(object):
             'divergence_sum': self.divergence_sum,
             # 'diversity_sum': self.level_diversity_sum,
             'regret_sum': level_sampler.regret_sum,
-            #KELLY log mean diversity for all seeds current working buffer
-            # 'diversity_mean_buffer': level_sampler.diversity_mean,
 
             'mean_agent_return': mean_agent_return,
             'agent_value_loss': agent_info['value_loss'],
